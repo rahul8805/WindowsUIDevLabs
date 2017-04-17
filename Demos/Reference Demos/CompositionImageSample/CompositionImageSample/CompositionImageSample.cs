@@ -26,6 +26,7 @@ using Windows.UI.Composition;
 using Windows.UI.Core;
 
 using Microsoft.UI.Composition.Toolkit;
+using Windows.UI.Xaml;
 
 namespace CompositionImageSample
 {
@@ -73,7 +74,7 @@ namespace CompositionImageSample
 
         void CreateChildElement()
         {
-            Uri localUri = new Uri("ms-appx:///Assets/StoreLogo.png");
+            Uri localUri = new Uri("ms-appx:///Assets/Kitten.png");
             _imageFactory = CompositionImageFactory.CreateCompositionImageFactory(_compositor);
             CompositionImageOptions options = new CompositionImageOptions()
             {
@@ -82,10 +83,51 @@ namespace CompositionImageSample
             };
 
             _image = _imageFactory.CreateImageFromUri(localUri, options);
-            var visual = _compositor.CreateSpriteVisual();
-            visual.Size = new Vector2(400.0f, 400.0f);
-            visual.Brush = _compositor.CreateSurfaceBrush(_image.Surface);
-            _root.Children.InsertAtTop(visual);
+            var v1_0 = _compositor.CreateSpriteVisual();
+            v1_0.Size = new Vector2(200.0f, 200.0f);
+            var surfaceBrush = _compositor.CreateSurfaceBrush(_image.Surface);
+            surfaceBrush.HorizontalAlignmentRatio = 0.9f;
+            surfaceBrush.VerticalAlignmentRatio = 0.0f;
+            surfaceBrush.Stretch = CompositionStretch.Fill;
+
+            v1_0.Brush = surfaceBrush;
+            v1_0.CenterPoint = new Vector3(v1_0.Size / 2, 0);
+
+            var v1_1 = _compositor.CreateSpriteVisual();
+            v1_1.Size = new Vector2(400.0f, 400.0f);
+            v1_1.Brush = _compositor.CreateColorBrush(Colors.Blue);
+            //v1_1.Opacity = 0.5f;
+
+            var v2_0 = _compositor.CreateSpriteVisual();
+            v2_0.Size = new Vector2(100, 500.0f);
+            v2_0.Brush = _compositor.CreateColorBrush(Colors.Red);
+            //v2_0.Opacity = 0.5f;
+
+            var v2_1 = _compositor.CreateSpriteVisual();
+            v2_1.Size = new Vector2(200, 450.0f);
+            v2_1.Brush = _compositor.CreateColorBrush(Colors.Green);
+
+            _root.Children.InsertAtTop(v1_1); //b
+            _root.Children.InsertAtTop(v2_0); //r
+            _root.Children.InsertAtTop(v1_0); //k
+            v1_1.Children.InsertAtTop(v2_1); //g
+
+            ScalarKeyFrameAnimation animation = _compositor.CreateScalarKeyFrameAnimation();
+            v1_0.Opacity = 1.0f;
+            animation.InsertKeyFrame(1.0f, 360.0f);
+            animation.Duration = TimeSpan.FromSeconds(10);
+            animation.IterationBehavior = AnimationIterationBehavior.Forever;
+            v1_0.StartAnimation("RotationAngleInDegrees", animation);
+
+            ExpressionAnimation parallaxAnimation = _compositor.CreateExpressionAnimation("numerator*kittenVisual.RotationAngleInDegrees");
+
+            float factor = 1.0f / 360f;
+            parallaxAnimation.SetScalarParameter("numerator", factor);
+            parallaxAnimation.SetReferenceParameter("kittenVisual", v1_0);
+
+            // Start the animation on the background object
+            //
+            v1_1.StartAnimation("Opacity", parallaxAnimation);
 
             // If for some reason the image fails to load, replace the brush with
             // a red solid color.
@@ -93,7 +135,7 @@ namespace CompositionImageSample
             {
                 if (status != CompositionImageLoadStatus.Success)
                 {
-                    visual.Brush = _compositor.CreateColorBrush(Colors.Red);
+                    v1_0.Brush = _compositor.CreateColorBrush(Colors.Red);
                 }
             };
         }
